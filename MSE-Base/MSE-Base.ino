@@ -138,6 +138,8 @@ unsigned long ul_200_mS_timer = 0;                                            //
 unsigned long ul_Display_Time;                                                // Heartbeat LED update timer
 unsigned long ul_Previous_Micros;                                             // Last microsecond count
 unsigned long ul_Current_Micros;                                              // Current microsecond count
+unsigned long ul_Current_Millis;
+unsigned long ul_Previous_Millis;
 
 // Declare SK6812 SMART LED object
 //   Argument 1 = Number of LEDs (pixels) in use
@@ -329,40 +331,71 @@ void loop()
                {
                   if(bt_2_S_Time_Up)                                          // Update drive state after 2 seconds
                   {
-                     bt_2_S_Time_Up = false;                                  // Reset 2 second timer
-                     
+                     ul_Current_Millis = millis();
+
                      switch(uc_Drive_Index)                                   // Cycle through drive states
                      {
                         case 0: // Stop
                         {
                            Bot.Stop("D1");                                    // Drive ID
                            uc_Drive_Index = 1;                                // Next state: drive forward
+                           ul_Previous_Millis = millis();
                            break;
                         }
                         case 1: // Drive forward
                         {
-                           Bot.Forward("D1", uc_Drive_Speed, uc_Drive_Speed); // Drive ID, Left speed, Right speed
-                           uc_Drive_Index = 2;                                // Next state: drive backward
+                           Bot.Forward("D1", 254, 251); // Drive ID, Left speed, Right speed
+                           if(ul_Current_Millis - ul_Previous_Millis >= 5181)
+                           {
+                             uc_Drive_Index = 2;
+                             ul_Previous_Millis = millis();
+                           }
                            break;
                         }
-                        case 2: // Drive backward
+                        case 2: // Drive forward
                         {
-                           Bot.Reverse("D1", uc_Drive_Speed);                 // Drive ID, Speed (same for both)                 
-                           uc_Drive_Index = 3;                                // Next state: turn left
+                           Bot.Reverse("D1", 254, 251); // Drive ID, Left speed, Right speed
+                           if(ul_Current_Millis - ul_Previous_Millis >= 2591)
+                           {
+                             uc_Drive_Index = 3;
+                             ul_Previous_Millis = millis();
+                           }
                            break;
                         }
-                        case 3: // Turn left (counterclockwise)
+                        case 3: // Drive forward
                         {
-                           Bot.Left("D1", uc_Drive_Speed);                    // Drive ID, Speed (same for both)
-                           uc_Drive_Index = 4;                                // Next state: turn right
+                           Bot.Stop("D1"); // Drive ID, Left speed, Right speed
+                           if(ul_Current_Millis - ul_Previous_Millis >= 2000)
+                           {
+                             uc_Drive_Index = 4;
+                             ul_Previous_Millis = millis();
+                           }
                            break;
                         }
-                        case 4: // Turn right (clockwise)
+                        case 4:
                         {
-                           Bot.Right("D1", uc_Drive_Speed);                   // Drive ID, Speed (same for both)
-                           uc_Drive_Index = 0;                                // Next state: stop
+                           Bot.Reverse("D1", 254, 251); // Drive ID, Left speed, Right speed
+                           if(ul_Current_Millis - ul_Previous_Millis >= 2591)
+                           {
+                             uc_Drive_Index = 5;
+                             ul_Previous_Millis = millis();
+                           }
                            break;
                         }
+                        case 5: // Drive forward
+                        {
+                           Bot.Stop("D1"); // Drive ID, Left speed, Right speed
+                           if(ul_Current_Millis - ul_Previous_Millis >= 2000)
+                           {
+                             ui_Robot_Mode_Index = 0;
+                           }
+                           break;
+                        }
+
+                        //Spd 184, 55mm
+                        //Spd 200, 79mm
+                        //Spd 254, 193mm
+                        //Spd 150, 46mm
                      }
                   }
                }
